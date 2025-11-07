@@ -1,0 +1,64 @@
+@startuml managed_lambdas_class_diagram
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "Core" #E8F5E9 {
+  class ManagedLambdas {
+    +configuration: Configuration
+    +configure()
+  }
+  
+  class Configuration {
+    +data_shapes_url: String
+    +otel_exporter: String
+    +kafka_brokers: Array
+    +validate!()
+  }
+  
+  class Core {
+    -config: Configuration
+    +create_specification()
+    +deploy()
+    +manage()
+  }
+  
+  class LifecycleManager {
+    +generate_tests()
+    +deploy()
+    +manage()
+  }
+}
+
+package "IAC Adapters" #FFF3E0 {
+  abstract BaseAdapter {
+    +deploy()*
+    +detect()*
+    +manage()*
+  }
+  
+  class CloudFormationAdapter
+  class CdkPythonAdapter
+  class PulumiPythonAdapter
+}
+
+package "Language Support" #F3E5F5 {
+  abstract BaseSupport {
+    +generate_project()*
+    +build_package()*
+  }
+  
+  class RubySupport
+  class RustSupport
+}
+
+ManagedLambdas *-- Configuration
+Core --> LifecycleManager
+LifecycleManager --> BaseAdapter
+LifecycleManager --> BaseSupport
+BaseAdapter <|-- CloudFormationAdapter
+BaseAdapter <|-- CdkPythonAdapter
+BaseAdapter <|-- PulumiPythonAdapter
+BaseSupport <|-- RubySupport
+BaseSupport <|-- RustSupport
+
+@enduml

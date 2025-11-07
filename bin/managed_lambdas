@@ -1,0 +1,137 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "managed_lambdas"
+require "thor"
+
+module ManagedLambdas
+  class CLI < Thor
+    desc "version", "Display the version of managed_lambdas"
+    def version
+      puts "managed_lambdas version #{ManagedLambdas::VERSION}"
+    end
+
+    desc "create-spec NAME", "Create a new Lambda specification"
+    option :description, type: :string, desc: "Description of the Lambda"
+    option :language, type: :string, default: "ruby", desc: "Implementation language (ruby, rust)"
+    option :iac_platform, type: :string, default: "cloudformation", desc: "IAC platform"
+    def create_spec(name)
+      spec_details = {
+        name: name,
+        description: options[:description] || "A managed Lambda function",
+        language: options[:language],
+        iac_platform: options[:iac_platform]
+      }
+
+      core = Core.new
+      result = core.create_specification(spec_details)
+      
+      if result
+        puts "✓ Specification '#{name}' created successfully"
+      else
+        puts "✗ Failed to create specification"
+        exit 1
+      end
+    rescue => e
+      puts "✗ Error: #{e.message}"
+      exit 1
+    end
+
+    desc "get-spec NAME", "Get a Lambda specification"
+    def get_spec(name)
+      core = Core.new
+      result = core.get_specification(name)
+      
+      puts "Specification: #{name}"
+      puts JSON.pretty_generate(result)
+    rescue => e
+      puts "✗ Error: #{e.message}"
+      exit 1
+    end
+
+    desc "generate-tests NAME", "Generate tests for a Lambda"
+    def generate_tests(name)
+      core = Core.new
+      result = core.generate_tests(name)
+      
+      if result[:success]
+        puts "✓ Tests generated in #{result[:test_dir]}"
+      else
+        puts "✗ Failed to generate tests"
+        exit 1
+      end
+    rescue => e
+      puts "✗ Error: #{e.message}"
+      exit 1
+    end
+
+    desc "run-tests NAME", "Run tests for a Lambda"
+    def run_tests(name)
+      core = Core.new
+      result = core.run_tests(name)
+      
+      if result[:success]
+        puts "✓ Tests passed"
+      else
+        puts "✗ Tests failed"
+        exit 1
+      end
+    rescue => e
+      puts "✗ Error: #{e.message}"
+      exit 1
+    end
+
+    desc "deploy NAME", "Deploy a Lambda"
+    option :iac_platform, type: :string, desc: "IAC platform to use"
+    def deploy(name)
+      core = Core.new
+      result = core.deploy(name, iac_platform: options[:iac_platform])
+      
+      if result[:success]
+        puts "✓ Lambda '#{name}' deployed successfully"
+      else
+        puts "✗ Failed to deploy Lambda"
+        exit 1
+      end
+    rescue => e
+      puts "✗ Error: #{e.message}"
+      exit 1
+    end
+
+    desc "detect NAME", "Detect if a Lambda exists"
+    option :iac_platform, type: :string, desc: "IAC platform to use"
+    def detect(name)
+      core = Core.new
+      result = core.detect(name, iac_platform: options[:iac_platform])
+      
+      if result[:exists]
+        puts "✓ Lambda '#{name}' exists"
+      else
+        puts "✗ Lambda '#{name}' does not exist"
+      end
+    rescue => e
+      puts "✗ Error: #{e.message}"
+      exit 1
+    end
+
+    desc "manage NAME ACTION", "Manage a Lambda (enable, disable, get_status)"
+    option :iac_platform, type: :string, desc: "IAC platform to use"
+    def manage(name, action)
+      core = Core.new
+      result = core.manage(name, action, iac_platform: options[:iac_platform])
+      
+      if result[:success]
+        puts "✓ #{result[:message] || 'Action completed successfully'}"
+      else
+        puts "✗ Failed to manage Lambda"
+        exit 1
+      end
+    rescue => e
+      puts "✗ Error: #{e.message}"
+      exit 1
+    end
+  end
+end
+
+ManagedLambdas::CLI.start(ARGV)

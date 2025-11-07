@@ -1,0 +1,42 @@
+graph TB
+    subgraph Core
+        ML[ManagedLambdas]
+        Config[Configuration]
+        CoreClass[Core]
+        LM[LifecycleManager]
+    end
+    
+    subgraph DataShapes
+        DS[DataShapes::Client]
+    end
+    
+    subgraph "IAC Adapters"
+        BA[BaseAdapter]
+        CF[CloudFormation]
+        CDK[CDK Python/Go]
+        Pulumi[Pulumi Python/Go]
+    end
+    
+    subgraph "Language Support"
+        LS[BaseSupport]
+        Ruby[RubySupport]
+        Rust[RustSupport]
+    end
+    
+    subgraph Integration
+        Kafka[Kafka::Client]
+        OTEL[OTEL::Instrumentation]
+    end
+    
+    ML --> Config
+    CoreClass --> DS
+    CoreClass --> LM
+    LM --> BA
+    LM --> LS
+    BA --> CF
+    BA --> CDK
+    BA --> Pulumi
+    LS --> Ruby
+    LS --> Rust
+    CoreClass -.-> Kafka
+    CoreClass -.-> OTEL
